@@ -11,13 +11,16 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:open": "concurrently \"npm run dev\" \"npx cypress open\"",
-    "test:e2e": "cypress run --e2e",
+    "test:e2e:local": "cypress run --e2e --config baseUrl=http://localhost:5173 --env coverage=true",
+    "test:e2e:preprod": "cypress run --e2e --config baseUrl=https://preprod.admin.hei.school --env coverage=true",
+    "test:e2e:all": "concurrently \"npm run dev\" \"sleep 10 && npm run test:e2e:local && npm run test:e2e:preprod\"",
     "test:unit": "cypress run --component",
-    "test:e2e:ci": "concurrently \"npm run dev\" \"npm run test:e2e\"",
+    "test:e2e:ci": "npm run test:e2e:all",
     "test:unit:ci": "npm run test:unit && npm run test:unit",
     "test:merge:reports": "srm ./dist/test-reports.xml \"./dist/**/!(*test-reports).xml\""
   },
   "dependencies": {
+    "@haapi/typescript-client": "^1.103.1",
     "@mui/x-date-pickers": "^7.21.0",
     "@react-admin/ra-calendar": "^4.0.1",
     "@react-admin/ra-enterprise": "^7.0.0",
@@ -74,3 +77,4 @@
     "vite-plugin-istanbul": "^7.0.0"
   }
 }
+
