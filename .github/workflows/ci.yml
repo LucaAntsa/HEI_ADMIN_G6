@@ -173,10 +173,7 @@ jobs:
           unset-current-credentials: true
       - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
-      ## Install npm dependencies ##
-      - name: Install npm dependencies
-        run: npm ci
-
-      ## Build the application with vite and typescript ##
-      - name: Build app
-        run: npm run build
+      - name: Installer les dépendances et builder avec plus de mémoire
+        run: |
+          npm ci
+          NODE_OPTIONS="--max-old-space-size=4096" npm run build

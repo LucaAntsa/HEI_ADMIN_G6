@@ -3,15 +3,28 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
     "INSTATUS_PAYMENT_WEBHOOK"
   );
 
-  function updateInstatus(trigger: "up" | "down") {
+  function updateInstatus(triggerType: "up" | "down") {
     if (!webhookUrl) {
       throw new Error("INSTATUS_PAYMENT_WEBHOOK is not defined in Cypress env");
     }
+
+    const payload =
+      triggerType === "up"
+        ? {
+            trigger: "incident",
+            status: "resolved",
+            message: "Payment operational",
+          }
+        : {
+            trigger: "incident",
+            status: "investigating",
+            message: "Payment failure during E2E test",
+          };
     return cy.request({
       method: "POST",
       url: webhookUrl,
       headers: {"Content-Type": "application/json"},
-      body: {trigger},
+      body: payload,
       failOnStatusCode: false,
     });
   }

@@ -133,6 +133,34 @@ jobs:
           path: cypress/screenshots/
           retention-days: 1
 
+      - name: Vérification des fichiers requis pour Sonar
+        run: |
+          echo "📂 Contenu de coverage/ :"
+          ls -lh coverage || echo "⚠️  Le dossier 'coverage' est vide ou n'existe pas"
+
+          echo "📂 Contenu de dist/ :"
+          ls -lh dist || echo "⚠️  Le dossier 'dist' est vide ou n'existe pas"
+
+          if [[ -f coverage/lcov.info ]]; then echo "✅ coverage/lcov.info trouvé"; else echo "❌ coverage/lcov.info manquant"; fi
+          if [[ -f dist/test-reports.xml ]]; then echo "✅ dist/test-reports.xml trouvé"; else echo "❌ dist/test-reports.xml manquant"; fi
+
+      - name: Merge reports + Sonar
+        if: always()
+        run: |
+          if [[ -f coverage/lcov.info && -f dist/test-reports.xml ]]; then
+            echo "🧪 Fusion des rapports et lancement de l’analyse SonarCloud"
+            npx nyc report --reporter=lcov
+            npm run test:merge:reports
+            sonar-scanner \
+              -Dsonar.projectVersion=${{ steps.read-version.outputs.version }} \
+              -Dsonar.organization=hei-school \
+              -Dsonar.projectKey=hei_admin-ui \
+              -Dsonar.branch.name=${{ github.ref_name }} \
+              -Dsonar.host.url=https://sonarcloud.io
+          else
+            echo "⛔️ Analyse Sonar ignorée : fichiers requis manquants"
+          fi
+
       - name: Merge reports + Sonar
         if: always()
         run: |
@@ -155,19 +183,19 @@ jobs:
         run: |
           curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_AUTH_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
 
       - name: Instatus update (DOWN if failure)
         if: failure()
@@ -179,19 +207,19 @@ jobs:
         run: |
           curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_AUTH_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger_type": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
+          -d '{"triggerType": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
 
   build:
     runs-on: ubuntu-latest
