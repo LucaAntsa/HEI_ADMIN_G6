@@ -208,7 +208,7 @@ jobs:
           npm run build
 
   cleanup-preprod-data:
-    if: github.ref_name == 'CI-TEST'
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
