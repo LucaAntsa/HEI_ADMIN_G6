@@ -17,7 +17,6 @@ env:
   TEACHER1_EMAIL: ${{ secrets.TEACHER1_EMAIL }}
   ADMIN1_EMAIL: ${{ secrets.ADMIN1_EMAIL }}
   STUDENT1_EMAIL: ${{ secrets.STUDENT1_EMAIL }}
-
   REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
   REACT_APP_AWS_REGION: eu-west-3
   STUDENT1_PASSWORD: ${{ secrets.STUDENT1_PASSWORD }}
@@ -107,7 +106,6 @@ jobs:
           sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
       - run: npm install --location=global sonar-scanner
-
       - run: npm install --save-dev ts-node typescript
 
       - name: Read version
@@ -123,53 +121,56 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           command: npx cypress run --e2e --env codeCoverage=true
+          video: false
 
-      ## Generate Lcov report ##
-      - name: Generate Lcov report
-        if: always()
-        run: |
-          npx nyc report --reporter=lcov
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          retention-days: 1
 
-      ## Merge test reports ##
-      - name: Merge test reports
-        if: always()
-        run: |
-          npm run test:merge:reports
-
-      ## SonarQube Cloud Scan ##
-      - name: SonarQube Cloud Scan
+      - name: SonarQube Analysis
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_CONVENTIONAL_CHANGELOG }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          npx nyc report --reporter=lcov
+          npm run test:merge:reports
           sonar-scanner \
             -Dsonar.projectVersion=${{ steps.read-version.outputs.version }} \
+            -Dsonar.organization=hei-school \
+            -Dsonar.projectKey=hei_admin-ui \
             -Dsonar.branch.name=${{ github.ref_name }} \
             -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
       - name: Instatus update (UP)
+        if: success()
         env:
           INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
           INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
           INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
+          curl -X POST "$INSTATUS_PAYMENT_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
 
-          curl -X POST $INSTATUS_AUTH_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
+          curl -X POST "$INSTATUS_AUTH_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
 
-          curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
+          curl -X POST "$INSTATUS_PRESENCE_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
 
-          curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
+          curl -X POST "$INSTATUS_ETUDIANT_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
 
       - name: Instatus update (DOWN if failure)
         if: failure()
@@ -179,21 +180,21 @@ jobs:
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
           INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
+          curl -X POST "$INSTATUS_PAYMENT_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
 
-          curl -X POST $INSTATUS_AUTH_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
+          curl -X POST "$INSTATUS_AUTH_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
 
-          curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
+          curl -X POST "$INSTATUS_PRESENCE_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
 
-          curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
-          -H 'Content-Type: application/json' \
-          -d '{"triggerType": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
+          curl -X POST "$INSTATUS_ETUDIANT_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"trigger_type": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
 
   build:
     runs-on: ubuntu-latest
@@ -209,23 +210,23 @@ jobs:
           rm -rf node_modules
           npm cache clean --force
 
-      ## Connect to Numer Private Codeartifact Repository ##
       - name: Configure prod AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.0.1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.REACT_APP_AWS_REGION }}
+
       - run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
 
-      ## Connect to Numer Private Codeartifact Repository ##
       - name: Configure preprod AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.0.1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.REACT_APP_AWS_REGION }}
           unset-current-credentials: true
+
       - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
       - name: Installer les dépendances et builder avec plus de mémoire
