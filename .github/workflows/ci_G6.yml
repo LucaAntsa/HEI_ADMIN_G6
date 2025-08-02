@@ -160,19 +160,19 @@ jobs:
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
           INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          curl -X POST "$INSTATUS_PAYMENT_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdk9vby1002jklp1iku4aife" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
 
-          curl -X POST "$INSTATUS_AUTH_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdhd6maq003ji25slzy5nfc7" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
 
-          curl -X POST "$INSTATUS_PRESENCE_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdlhg8hk0285pa7fastqd5je" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
 
-          curl -X POST "$INSTATUS_ETUDIANT_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdk1b4yn008z10vtitonmsmm" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
 
@@ -184,19 +184,19 @@ jobs:
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
           INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          curl -X POST "$INSTATUS_PAYMENT_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdk9vby1002jklp1iku4aife" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
 
-          curl -X POST "$INSTATUS_AUTH_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdhd6maq003ji25slzy5nfc7" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
 
-          curl -X POST "$INSTATUS_PRESENCE_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdlhg8hk0285pa7fastqd5je" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
 
-          curl -X POST "$INSTATUS_ETUDIANT_WEBHOOK" \
+          curl -X POST "https://api.instatus.com/v3/integrations/webhook/cmdk1b4yn008z10vtitonmsmm" \
             -H 'Content-Type: application/json' \
             -d '{"trigger_type": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
 
