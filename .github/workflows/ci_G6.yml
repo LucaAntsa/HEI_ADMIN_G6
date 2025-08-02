@@ -117,6 +117,10 @@ jobs:
 
       - name: Run Cypress tests on preprod
         env:
+          CYPRESS_INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
+          CYPRESS_INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
+          CYPRESS_INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
+          CYPRESS_INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
           CYPRESS_BASE_URL: https://preprod.admin.hei.school
         uses: cypress-io/github-action@v6
         with:

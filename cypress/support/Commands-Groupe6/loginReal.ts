@@ -1,4 +1,6 @@
 //Ajout LoginReal
+/// <reference types="cypress" />
+
 Cypress.Commands.add(
   "loginReal",
   ({email, password}: {email: string; password: string}) => {
