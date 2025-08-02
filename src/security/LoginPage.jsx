@@ -137,13 +137,11 @@ const HaLoginPage = () => {
       style={{
         backgroundImage: "url(/login-bg100k.jpg)",
         backgroundSize: "cover",
-        position: "relative",
+        position: "fixed",
         padding: "0",
         margin: "0",
         width: "100%",
         height: "100%",
-        minHeight: "100vh",
-        paddingBottom: "50px",
       }}
     >
       {displayFull ? (
