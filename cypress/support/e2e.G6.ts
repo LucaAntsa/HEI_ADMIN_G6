@@ -1,6 +1,6 @@
 import "@cypress/code-coverage/support";
 import "./Commands-Groupe6/loginReal";
-import "./commands"
+import "./commands";
 
 Cypress.on("uncaught:exception", (err) => {
   const message = err.message || "";
