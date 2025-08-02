@@ -254,6 +254,6 @@ jobs:
     steps:
       - name: Trigger cleanup endpoint
         run: |
-          curl -X POST ${{ env.BASE_URL }}/api/cleanup \
+          curl -X POST ${{ secrets.BASE_URL }}/api/cleanup \
             -H "Authorization: Bearer ${{ secrets.PREPROD_CLEANUP_TOKEN }}" \
             -H "Content-Type: application/json"
