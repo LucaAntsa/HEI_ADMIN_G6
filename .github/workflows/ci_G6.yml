@@ -193,6 +193,11 @@ jobs:
         with:
           node-version: 18.19.0
 
+      - name: Nettoyer node_modules et cache
+        run: |
+          rm -rf node_modules
+          npm cache clean --force
+
       - name: AWS + Build
         run: |
           aws configure set aws_access_key_id ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
