@@ -1,35 +1,42 @@
 describe("Authentification (non mocké)", () => {
-  const webhookUrl: string | undefined = Cypress.env("INSTATUS_AUTH_WEBHOOK");
   const DEFAULT_TIMEOUT = 30000;
+  const componentId = Cypress.env("INSTATUS_AUTH_WEBHOOK_COMPONENT_ID");
+  const apiKey = Cypress.env("INSTATUS_API_KEY");
+  const pageId = Cypress.env("INSTATUS_PAGE_ID");
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!webhookUrl) {
+    if (!componentId || !apiKey || !pageId) {
       cy.log(
-        "Warning: INSTATUS_AUTH_WEBHOOK not defined - skipping Instatus update"
+        "Warning: Instatus credentials not defined - skipping status update"
       );
       return;
     }
 
     const payload = {
+      status: triggerType === "up" ? "operational" : "major_outage",
       name: "Auth Service",
-      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
-      message:
+      description:
         triggerType === "up"
-          ? "Authentification operationnal from E2E test"
-          : "Authentification failure during E2E test",
+          ? "Authentification opérationnelle (tests E2E passés)"
+          : "Échec d'authentification détecté (tests E2E échoués)",
     };
 
     return cy
       .request({
         method: "POST",
-        url: webhookUrl,
-        headers: {"Content-Type": "application/json"},
+        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+          cy.log(
+            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
+          );
         }
       });
   }

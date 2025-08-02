@@ -1,37 +1,42 @@
 describe("Paiement mobile par l'étudiant (non mocké)", () => {
-  const webhookUrl: string | undefined = Cypress.env(
-    "INSTATUS_PAYMENT_WEBHOOK"
-  );
   const DEFAULT_TIMEOUT = 30000;
+  const componentId = Cypress.env("INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID");
+  const apiKey = Cypress.env("INSTATUS_API_KEY");
+  const pageId = Cypress.env("INSTATUS_PAGE_ID");
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!webhookUrl) {
+    if (!componentId || !apiKey || !pageId) {
       cy.log(
-        "Warning: INSTATUS_PAYMENT_WEBHOOK not defined - skipping Instatus update"
+        "Warning: Instatus credentials not defined - skipping status update"
       );
       return;
     }
 
     const payload = {
+      status: triggerType === "up" ? "operational" : "major_outage",
       name: "Payment Service",
-      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
-      message:
+      description:
         triggerType === "up"
-          ? "Payment service operational from E2E test"
-          : "Payment service failure during E2E test",
+          ? "Payment opérationnelle (tests E2E passés)"
+          : "Échec de payement détecté (tests E2E échoués)",
     };
 
     return cy
       .request({
         method: "POST",
-        url: webhookUrl,
-        headers: {"Content-Type": "application/json"},
+        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+          cy.log(
+            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
+          );
         }
       });
   }

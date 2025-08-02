@@ -1,37 +1,42 @@
 describe("Création d'une présence (non mocké)", () => {
-  const webhookUrl: string | undefined = Cypress.env(
-    "INSTATUS_PRESENCE_WEBHOOK"
-  );
   const DEFAULT_TIMEOUT = 30000;
+  const componentId = Cypress.env("INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID");
+  const apiKey = Cypress.env("INSTATUS_API_KEY");
+  const pageId = Cypress.env("INSTATUS_PAGE_ID");
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!webhookUrl) {
+    if (!componentId || !apiKey || !pageId) {
       cy.log(
-        "Warning: INSTATUS_PRESENCE_WEBHOOK not defined - skipping Instatus update"
+        "Warning: Instatus credentials not defined - skipping status update"
       );
       return;
     }
 
     const payload = {
-      name: "Presence Service",
-      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
-      message:
+      status: triggerType === "up" ? "operational" : "major_outage",
+      name: "Présence Service",
+      description:
         triggerType === "up"
-          ? "Presence service operational from E2E test"
-          : "Presence service failure during E2E test",
+          ? "Présence opérationnelle (tests E2E passés)"
+          : "Échec de Présence détecté (tests E2E échoués)",
     };
 
     return cy
       .request({
         method: "POST",
-        url: webhookUrl,
-        headers: {"Content-Type": "application/json"},
+        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+          cy.log(
+            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
+          );
         }
       });
   }
