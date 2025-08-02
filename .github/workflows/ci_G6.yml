@@ -1,143 +1,156 @@
-name: CI/CD Preprod Groupe6
+name: CI_Preprod_Groupe6
 
 on:
   push:
-    branches: ["*"]
+    branches:
+      - "*"
   pull_request:
-    branches: ["*"]
+    branches:
+      - "*"
   workflow_dispatch:
   schedule:
     - cron: "0 3,11,19 * * *"
 
 env:
-  # Configuration de base
-  NODE_VERSION: 18.19.0
-  JAVA_VERSION: "17"
-  AWS_REGION: eu-west-3
-  BASE_URL: https://preprod.admin.hei.school
-  INSTATUS_API_VERSION: v3
-
-  # URLs et endpoints
-  REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
-  INSTATUS_API_URL: https://api.instatus.com/${{ secrets.INSTATUS_API_VERSION }}
-  WAF_JS_API_URL: ${{ secrets.WAF_JS_API_URL }}
-  SONARCLOUD_URL: https://sonarcloud.io
-
-  # Secrets Instatus
+  INSTATUS_API_URL: https://api.instatus.com/v3
   INSTATUS_PAGE_ID: ${{ secrets.INSTATUS_PAGE_ID }}
   INSTATUS_API_KEY: ${{ secrets.INSTATUS_API_KEY }}
+  #EMAIL
+  MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
+  MONITOR1_EMAIL: ${{ secrets.MONITOR1_EMAIL }}
+  TEACHER1_EMAIL: ${{ secrets.TEACHER1_EMAIL }}
+  ADMIN1_EMAIL: ${{ secrets.ADMIN1_EMAIL }}
+  STUDENT1_EMAIL: ${{ secrets.STUDENT1_EMAIL }}
+  #Commande
+  REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+  REACT_APP_AWS_REGION: eu-west-3
+  STUDENT1_PASSWORD: ${{ secrets.STUDENT1_PASSWORD }}
+  TEACHER1_PASSWORD: ${{ secrets.TEACHER1_PASSWORD }}
+  MANAGER1_PASSWORD: ${{ secrets.MANAGER1_PASSWORD }}
+  MONITOR1_PASSWORD: ${{ secrets.MONITOR1_PASSWORD }}
+  REACT_APP_USERPOOL_ID: ${{ vars.PREPROD_USERPOOL_ID }}
+  REACT_APP_WEBCLIENT_ID: ${{ vars.PREPROD_WEBCLIENT_ID }}
+  REACT_APP_OAUTH_DOMAIN: ${{ vars.PREPROD_OAUTH_DOMAIN }}
+  WAF_JS_API_URL: ${{ secrets.WAF_JS_API_URL }}
+  WAF_INTEGRATION_API_KEY: ${{ secrets.WAF_INTEGRATION_API_KEY }}
+  REACT_APP_CASDOOR_SDK_SERVER_URL: ${{ secrets.REACT_APP_CASDOOR_SDK_SERVER_URL }}
+  REACT_APP_CASDOOR_SDK_CLIENT_ID: ${{ secrets.REACT_APP_CASDOOR_SDK_CLIENT_ID }}
+  REACT_APP_CASDOOR_SDK_APP_NAME: ${{ secrets.REACT_APP_CASDOOR_SDK_APP_NAME }}
+  REACT_APP_CASDOOR_SDK_ORGANIZATION_NAME: ${{ secrets.REACT_APP_CASDOOR_SDK_ORGANIZATION_NAME }}
+  REACT_APP_CASDOOR_SDK_REDIRECT_PATH: ${{ secrets.REACT_APP_CASDOOR_SDK_REDIRECT_PATH }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 jobs:
-  lint-and-format:
-    name: "Lint & Format"
+  style:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          node-version: 18.19.0
 
-      - name: Clean npm config
-        run: rm -f ~/.npmrc .npmrc
+      - name: Supprimer .npmrc global (si présent)
+        run: rm -f ~/.npmrc
 
-      - name: Configure AWS Prod Credentials
+      - name: Supprimer .npmrc local (si présent)
+        run: rm -f .npmrc
+
+      - name: Configure AWS credentials (prod)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
 
-      - name: Setup Prod npmrc
-        run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
+      - run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
 
-      - name: Configure AWS Preprod Credentials
+      - name: Configure AWS credentials (preprod)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
           unset-current-credentials: true
 
-      - name: Setup Preprod npmrc
-        run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
+      - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run format:check
 
-      - name: Run format check
-        run: npm run format:check
-
-  e2e-tests:
-    name: "End-to-End Tests"
-    needs: lint-and-format
-    runs-on: ubuntu-latest
+  test-e2e:
     timeout-minutes: 35
-    env:
-      CYPRESS_BASE_URL: ${{ secrets.BASE_URL }}
-      CYPRESS_INSTATUS_API_KEY: ${{ secrets.INSTATUS_API_KEY }}
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          node-version: 18.19.0
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
+      - uses: actions/setup-java@v3
         with:
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: "17"
           distribution: "temurin"
 
-      - name: Configure AWS environments
+      - name: Supprimer .npmrc global (si présent)
+        run: rm -f ~/.npmrc
+
+      - name: Supprimer .npmrc local (si présent)
+        run: rm -f .npmrc
+
+      - name: Configurer AWS + npmrc (prod puis preprod)
         run: |
           aws configure set aws_access_key_id ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
-          aws configure set region ${{ env.AWS_REGION }}
+          aws configure set region ${{ env.REACT_APP_AWS_REGION }}
           sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
           aws configure set aws_access_key_id ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
           sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
-      - name: Install tools
-        run: |
-          npm install --location=global sonar-scanner
-          npm install --save-dev ts-node typescript
+      - run: npm install --location=global sonar-scanner
+      - run: npm install --save-dev ts-node typescript
 
-      - name: Get application version
+      - name: Read version
         id: read-version
         uses: CumulusDS/get-yaml-paths-action@v0.1.0
         with:
           file: version.yml
           version: version
 
-      - name: Run Cypress tests
-        uses: cypress-io/github-action@v6
+      - name: Run Cypress tests on preprod
         env:
-          CYPRESS_ADMIN1_EMAIL: ${{ secrets.ADMIN1_EMAIL }}
-          CYPRESS_ADMIN1_PASSWORD: ${{ secrets.ADMIN1_PASSWORD }}
-          CYPRESS_MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
-          CYPRESS_MANAGER1_PASSWORD: ${{ secrets.MANAGER1_PASSWORD }}
-          CYPRESS_TEACHER1_EMAIL: ${{ secrets.TEACHER1_EMAIL }}
-          CYPRESS_TEACHER1_PASSWORD: ${{ secrets.TEACHER1_PASSWORD }}
-          CYPRESS_STUDENT1_EMAIL: ${{ secrets.STUDENT1_EMAIL }}
-          CYPRESS_STUDENT1_PASSWORD: ${{ secrets.STUDENT1_PASSWORD }}
-          CYPRESS_MONITOR1_EMAIL: ${{ secrets.MONITOR1_EMAIL }}
-          CYPRESS_MONITOR1_PASSWORD: ${{ secrets.MONITOR1_PASSWORD }}
+          CYPRESS_INSTATUS_API_KEY: ${{secrets.INSTATUS_API_KEY}}
+          CYPRESS_INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID}}
+          CYPRESS_INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID}}
+          CYPRESS_INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID}}
+          CYPRESS_INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID}}
+
+          CYPRESS_INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
+          CYPRESS_INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
+          CYPRESS_INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
+          CYPRESS_INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
+
+          CYPRESS_ADMIN1_EMAIL: ${{secrets.ADMIN1_EMAIL}}
+          CYPRESS_MONITOR1_EMAIL: ${{secrets.MONITOR1_EMAIL}}
+          CYPRESS_TEACHER1_EMAIL: ${{secrets.TEACHER1_EMAIL}}
+          CYPRESS_STUDENT1_EMAIL: ${{secrets.STUDENT1_EMAIL}}
+          CYPRESS_MANAGER1_EMAIL: ${{secrets.MANAGER1_EMAIL}}
+
+          CYPRESS_STUDENT1_PASSWORD: ${{secrets.STUDENT1_PASSWORD}}
+          CYPRESS_MANAGER1_PASSWORD: ${{secrets.MANAGER1_PASSWORD}}
+          CYPRESS_MONITOR1_PASSWORD: ${{secrets.MONITOR1_PASSWORD}}
+          CYPRESS_TEACHER1_PASSWORD: ${{secrets.TEACHER1_PASSWORD}}
+          CYPRESS_ADMIN1_PASSWORD: ${{secrets.ADMIN1_PASSWORD}}
+          CYPRESS_BASE_URL: https://preprod.admin.hei.school
+        uses: cypress-io/github-action@v6
         with:
           command: npx cypress run --e2e --env codeCoverage=true
           video: false
 
-      - name: Upload test screenshots on failure
+      - name: Upload Cypress screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -145,7 +158,7 @@ jobs:
           path: cypress/screenshots/
           retention-days: 1
 
-      - name: Run SonarQube analysis
+      - name: SonarQube Analysis
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_CONVENTIONAL_CHANGELOG }}
@@ -158,22 +171,27 @@ jobs:
             -Dsonar.organization=hei-school \
             -Dsonar.projectKey=hei_admin-ui \
             -Dsonar.branch.name=${{ github.ref_name }} \
-            -Dsonar.host.url=${{ env.SONARCLOUD_URL }} \
+            -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
-      - name: Update Instatus (Success)
+      - name: Instatus update (UP)
         if: success()
+        env:
+          INSTATUS_AUTH_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PAYMENT_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PRESENCE_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_ETUDIANT_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}
         run: |
           services=(
-            "auth:${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}"
-            "payment:${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}"
-            "presence:${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}"
-            "etudiant:${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}"
+            "auth:$INSTATUS_AUTH_WEBHOOK_COMPONENT_ID:Authentification opérationnelle (tests E2E passés)"
+            "payment:$INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID:Service Payment opérationnel (tests E2E passés)"
+            "presence:$INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID:Service Presence opérationnel (tests E2E passés)"
+            "etudiant:$INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID:Service Etudiant opérationnel (tests E2E passés)"
           )
 
           for service in "${services[@]}"; do
-            IFS=':' read -r service_name component_id <<< "$service"
+            IFS=':' read -r service_name component_id description <<< "$service"
             curl -X POST \
               "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
               -H "Authorization: Bearer $INSTATUS_API_KEY" \
@@ -181,22 +199,27 @@ jobs:
               -d '{
                 "status": "operational",
                 "name": "'"${service_name^}"' Service",
-                "description": "Tests E2E réussis - $(date +"%Y-%m-%d %H:%M")"
+                "description": "'"$description"'"
               }' || echo "Failed to update ${service_name} status"
           done
 
-      - name: Update Instatus (Failure)
+      - name: Instatus update (DOWN if failure)
         if: failure()
+        env:
+          INSTATUS_AUTH_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PAYMENT_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PRESENCE_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_ETUDIANT_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}
         run: |
           services=(
-            "auth:${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}"
-            "payment:${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}"
-            "presence:${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}"
-            "etudiant:${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}"
+            "auth:$INSTATUS_AUTH_WEBHOOK_COMPONENT_ID:Échec d'authentification détecté (tests E2E échoués)"
+            "payment:$INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Payment (tests E2E échoués)"
+            "presence:$INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Presence (tests E2E échoués)"
+            "etudiant:$INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Etudiant (tests E2E échoués)"
           )
 
           for service in "${services[@]}"; do
-            IFS=':' read -r service_name component_id <<< "$service"
+            IFS=':' read -r service_name component_id description <<< "$service"
             curl -X POST \
               "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
               -H "Authorization: Bearer $INSTATUS_API_KEY" \
@@ -204,56 +227,55 @@ jobs:
               -d '{
                 "status": "major_outage",
                 "name": "'"${service_name^}"' Service",
-                "description": "Échec des tests E2E - $(date +"%Y-%m-%d %H:%M")"
+                "description": "'"$description"'"
               }' || echo "Failed to update ${service_name} status"
           done
 
-  build-app:
-    name: "Build Application"
-    needs: e2e-tests
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          node-version: 18.19.0
 
-      - name: Clean environment
+      - name: Nettoyer node_modules et cache
         run: |
           rm -rf node_modules
           npm cache clean --force
 
-      - name: Configure AWS Prod Credentials
+      - name: Configure prod AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
 
-      - name: Setup Prod npmrc
-        run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
+      - run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
 
-      - name: Build application
+      - name: Configure preprod AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
+          unset-current-credentials: true
+
+      - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
+
+      - name: Installer les dépendances et builder avec plus de mémoire
         run: |
           npm ci
           NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
-  cleanup-data:
-    name: "Cleanup Preprod Data"
+  cleanup-preprod-data:
     if: github.ref_name == 'main'
-    needs: build-app
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
-      - name: Trigger cleanup endpoint
+      - name: Call cleanup endpoint
         run: |
-          curl -X POST ${{ secrets.BASE_URL }}/api/cleanup \
+          curl -X POST https://preprod.admin.hei.school/api/cleanup \
             -H "Authorization: Bearer ${{ secrets.PREPROD_CLEANUP_TOKEN }}" \
             -H "Content-Type: application/json"
