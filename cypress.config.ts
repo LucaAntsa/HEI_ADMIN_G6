@@ -6,12 +6,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
-  // Configuration des screenshots
-  screenshotOnRunFailure: true,
-  screenshotsFolder: "cypress/screenshots",
-  trashAssetsBeforeRuns: true,
-  video: false,
-
   viewportHeight: 1080,
   viewportWidth: 1920,
   defaultCommandTimeout: 25_000,
@@ -56,6 +50,8 @@ export default defineConfig({
     ADMIN1_PASSWORD: process.env.ADMIN1_PASSWORD,
     STAFF1_PASSWORD: process.env.STAFF1_PASSWORD,
     ORGANIZER1_PASSWORD: process.env.ORGANIZER1_PASSWORD,
+    REACT_APP_TEST_ORGANIZER1_PASSWORD:
+      process.env.REACT_APP_TEST_ORGANIZER1_PASSWORD,
     codeCoverage: {
       exclude: ["cypress/**/*.*", "src/**/*.cy", "src/providers/**/*.*"],
     },

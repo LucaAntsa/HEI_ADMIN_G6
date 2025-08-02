@@ -124,55 +124,29 @@ jobs:
         with:
           command: npx cypress run --e2e --env codeCoverage=true
 
-      # uploader les screenshots
-      - name: Upload Cypress screenshots
-        if: failure() # Seulement si des tests échouent
-        uses: actions/upload-artifact@v3
-        with:
-          name: cypress-screenshots
-          path: cypress/screenshots/
-          retention-days: 1
-
-      - name: Vérification des fichiers requis pour Sonar
-        run: |
-          echo "📂 Contenu de coverage/ :"
-          ls -lh coverage || echo "⚠️  Le dossier 'coverage' est vide ou n'existe pas"
-
-          echo "📂 Contenu de dist/ :"
-          ls -lh dist || echo "⚠️  Le dossier 'dist' est vide ou n'existe pas"
-
-          if [[ -f coverage/lcov.info ]]; then echo "✅ coverage/lcov.info trouvé"; else echo "❌ coverage/lcov.info manquant"; fi
-          if [[ -f dist/test-reports.xml ]]; then echo "✅ dist/test-reports.xml trouvé"; else echo "❌ dist/test-reports.xml manquant"; fi
-
-      - name: Merge reports + Sonar
-        if: always()
-        run: |
-          if [[ -f coverage/lcov.info && -f dist/test-reports.xml ]]; then
-            echo "🧪 Fusion des rapports et lancement de l’analyse SonarCloud"
-            npx nyc report --reporter=lcov
-            npm run test:merge:reports
-            sonar-scanner \
-              -Dsonar.projectVersion=${{ steps.read-version.outputs.version }} \
-              -Dsonar.organization=hei-school \
-              -Dsonar.projectKey=hei_admin-ui \
-              -Dsonar.branch.name=${{ github.ref_name }} \
-              -Dsonar.host.url=https://sonarcloud.io
-          else
-            echo "⛔️ Analyse Sonar ignorée : fichiers requis manquants"
-          fi
-
-      - name: Merge reports + Sonar
+      ## Generate Lcov report ##
+      - name: Generate Lcov report
         if: always()
         run: |
           npx nyc report --reporter=lcov
+
+      ## Merge test reports ##
+      - name: Merge test reports
+        if: always()
+        run: |
           npm run test:merge:reports
+
+      ## SonarQube Cloud Scan ##
+      - name: SonarQube Cloud Scan
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_CONVENTIONAL_CHANGELOG }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
           sonar-scanner \
             -Dsonar.projectVersion=${{ steps.read-version.outputs.version }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.organization=hei-school \
-            -Dsonar.projectKey=hei_admin-ui \
             -Dsonar.branch.name=${{ github.ref_name }} \
-            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.host.url=https://sonarcloud.io \
 
       - name: Instatus update (UP)
         env:
@@ -235,19 +209,29 @@ jobs:
           rm -rf node_modules
           npm cache clean --force
 
-      - name: AWS + Build
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
-          aws configure set region ${{ env.REACT_APP_AWS_REGION }}
-          sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
-          aws configure set aws_access_key_id ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
-          aws configure set aws_secret_access_key ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
-          sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
+      ## Connect to Numer Private Codeartifact Repository ##
+      - name: Configure prod AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
+      - run: sh ./initNpmrc.sh hei-store npm-hei-school 088312068315
 
-      - run: |
+      ## Connect to Numer Private Codeartifact Repository ##
+      - name: Configure preprod AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          aws-access-key-id: ${{ secrets.PREPROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REACT_APP_AWS_REGION }}
+          unset-current-credentials: true
+      - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
+
+      - name: Installer les dépendances et builder avec plus de mémoire
+        run: |
           npm ci
-          npm run build
+          NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
   cleanup-preprod-data:
     if: github.ref_name == 'main'
