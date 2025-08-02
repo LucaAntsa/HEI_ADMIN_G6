@@ -14,7 +14,7 @@ describe("Student (non mocké)", () => {
 
     const payload = {
       name: "Student Service",
-      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
       message:
         triggerType === "up"
           ? "Student service operational from E2E test"

@@ -12,10 +12,10 @@ describe("Authentification (non mocké)", () => {
 
     const payload = {
       name: "Auth Service",
-      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
       message:
         triggerType === "up"
-          ? "Authentification operational from E2E test"
+          ? "Authentification operationnal from E2E test"
           : "Authentification failure during E2E test",
     };
 

@@ -176,9 +176,9 @@ jobs:
               -H 'Content-Type: application/json' \
               -d '{
                 "name": "'"${service}"' Service",
-                "status": "OPERATIONAL",
-                "message": "'"${service}"' back up from GitHub CI"
-              }'
+                "status": "resolved",
+                "message": "'"${service}"' service is back to normal"
+              }' || echo "Failed to update ${service} status"
           done
 
       - name: Instatus update (DOWN if failure)
@@ -195,9 +195,9 @@ jobs:
               -H 'Content-Type: application/json' \
               -d '{
                 "name": "'"${service}"' Service",
-                "status": "INVESTIGATING",
-                "message": "'"${service}"' failed in GitHub CI"
-              }'
+                "status": "investigating",
+                "message": "'"${service}"' service disruption detected"
+              }' || echo "Failed to update ${service} status"
           done
 
   build:

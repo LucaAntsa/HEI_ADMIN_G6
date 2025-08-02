@@ -14,7 +14,7 @@ describe("Création d'une présence (non mocké)", () => {
 
     const payload = {
       name: "Presence Service",
-      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
       message:
         triggerType === "up"
           ? "Presence service operational from E2E test"

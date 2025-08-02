@@ -14,7 +14,7 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
 
     const payload = {
       name: "Payment Service",
-      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      status: triggerType === "up" ? "RESOLVED" : "INVESTIGATING",
       message:
         triggerType === "up"
           ? "Payment service operational from E2E test"
