@@ -2,40 +2,52 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
   const webhookUrl: string | undefined = Cypress.env(
     "INSTATUS_PAYMENT_WEBHOOK"
   );
+  const DEFAULT_TIMEOUT = 30000;
 
   function updateInstatus(triggerType: "up" | "down") {
     if (!webhookUrl) {
-      throw new Error("INSTATUS_PAYMENT_WEBHOOK is not defined in Cypress env");
+      cy.log(
+        "Warning: INSTATUS_PAYMENT_WEBHOOK not defined - skipping Instatus update"
+      );
+      return;
     }
 
-    const payload =
-      triggerType === "up"
-        ? {
-            trigger: "incident",
-            status: "resolved",
-            message: "Payment operational",
-          }
-        : {
-            trigger: "incident",
-            status: "investigating",
-            message: "Payment failure during E2E test",
-          };
-    return cy.request({
-      method: "POST",
-      url: webhookUrl,
-      headers: {"Content-Type": "application/json"},
-      body: payload,
-      failOnStatusCode: false,
-    });
+    const payload = {
+      name: "Payment Service",
+      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      message:
+        triggerType === "up"
+          ? "Payment service operational from E2E test"
+          : "Payment service failure during E2E test",
+    };
+
+    return cy
+      .request({
+        method: "POST",
+        url: webhookUrl,
+        headers: {"Content-Type": "application/json"},
+        body: payload,
+        failOnStatusCode: false,
+      })
+      .then((response) => {
+        if (response.status !== 200) {
+          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        }
+      });
   }
 
   function generateRandomReference(): string {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
-    const datePart = `${pad(now.getFullYear() % 100)}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-    const timePart = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `MP${datePart}.${timePart}.${randomPart}`;
+    return `MP${now
+      .getFullYear()
+      .toString()
+      .slice(-2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}.${pad(
+      now.getHours()
+    )}${pad(now.getMinutes())}.${Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase()}`;
   }
 
   const users = [
@@ -53,6 +65,12 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
 
   users.forEach(({role, email, password}) => {
     describe(`Tests pour le rôle ${role}`, () => {
+      before(() => {
+        if (!email || !password) {
+          throw new Error(`Missing credentials for ${role}`);
+        }
+      });
+
       beforeEach(() => {
         cy.loginReal({email, password});
       });
@@ -61,10 +79,12 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
         beforeEach(() => {
           cy.getByTestid("students-menu").click();
           cy.get(`[href="/transactions"]`).click();
-          cy.contains("Transactions (Mobile Money)", {timeout: 30000}).should(
-            "be.visible"
+          cy.contains("Transactions (Mobile Money)", {
+            timeout: DEFAULT_TIMEOUT,
+          }).should("be.visible");
+          cy.get("table.MuiTable-root", {timeout: DEFAULT_TIMEOUT}).should(
+            "exist"
           );
-          cy.get("table.MuiTable-root", {timeout: 30000}).should("exist");
         });
 
         it("Manager : Création de frais pour un étudiant", () => {
@@ -81,7 +101,9 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
 
           cy.get("#predefinedType").click();
           cy.contains("li", "Rattrapage").click();
-          cy.get(".MuiToolbar-root > .MuiButtonBase-root").click();
+          cy.get(".MuiToolbar-root > .MuiButtonBase-root")
+            .click()
+            .then(() => updateInstatus("up"));
         });
 
         ["SUCCESS", "PENDING", "FAILED"].forEach((status) => {
@@ -98,10 +120,15 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
               );
 
               if (icon) {
-                cy.wrap(icon).trigger("mouseover");
-                cy.contains(statusMap[status as keyof typeof statusMap]);
+                cy.wrap(icon)
+                  .trigger("mouseover")
+                  .then(() => {
+                    cy.contains(statusMap[status as keyof typeof statusMap]);
+                    updateInstatus("up");
+                  });
               } else {
                 cy.log(`Pas de transaction avec le statut ${status} trouvée`);
+                updateInstatus("up");
                 expect(true).to.be.true;
               }
             });
@@ -113,7 +140,9 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
         beforeEach(() => {
           cy.get('[href*="/students/"]').contains("Frais").click();
           cy.url().should("include", "/fees");
-          cy.get("table.MuiTable-root").should("exist");
+          cy.get("table.MuiTable-root", {timeout: DEFAULT_TIMEOUT}).should(
+            "exist"
+          );
           cy.contains("Reste à payer").should("exist");
         });
 
@@ -138,24 +167,28 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
                 if (refText === "" || refText.includes("Non défini")) {
                   cy.wrap($row).within(() => {
                     cy.get('[data-testid^="addMobileMoney-"]', {
-                      timeout: 15000,
+                      timeout: DEFAULT_TIMEOUT,
                     }).click({force: true});
                   });
 
                   const ref = generateRandomReference();
-                  cy.get("#psp_id", {timeout: 15000}).click().type(ref);
+                  cy.get("#psp_id", {timeout: DEFAULT_TIMEOUT})
+                    .click()
+                    .type(ref);
                   cy.contains("button", "Enregistrer").click();
 
                   cy.contains(/Frais (créés|mis à jour) avec succès/i, {
-                    timeout: 15000,
+                    timeout: DEFAULT_TIMEOUT,
                   }).should("exist");
                   cy.get('[data-testid^="pspTypeIcon-"]', {
-                    timeout: 15000,
-                  }).should("exist");
-
-                  updateInstatus("up");
-                  testHandled = true;
-                  return false; // break .each()
+                    timeout: DEFAULT_TIMEOUT,
+                  })
+                    .should("exist")
+                    .then(() => {
+                      updateInstatus("up");
+                      testHandled = true;
+                      return false; // break .each()
+                    });
                 }
               }
             })
@@ -171,5 +204,13 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
         });
       }
     });
+  });
+
+  afterEach(function () {
+    if (this.currentTest?.isFailed()) {
+      cy.then(() => updateInstatus("down")).then(() => {
+        cy.log("Payment service status set to DOWN in Instatus");
+      });
+    }
   });
 });

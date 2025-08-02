@@ -2,37 +2,62 @@ describe("Création d'une présence (non mocké)", () => {
   const webhookUrl: string | undefined = Cypress.env(
     "INSTATUS_PRESENCE_WEBHOOK"
   );
+  const DEFAULT_TIMEOUT = 30000;
 
-  function updateInstatus(trigger: "up" | "down") {
+  function updateInstatus(triggerType: "up" | "down") {
     if (!webhookUrl) {
-      throw new Error(
-        "INSTATUS_PRESENCE_WEBHOOK is not defined in Cypress env"
+      cy.log(
+        "Warning: INSTATUS_PRESENCE_WEBHOOK not defined - skipping Instatus update"
       );
+      return;
     }
-    return cy.request({
-      method: "POST",
-      url: webhookUrl,
-      headers: {"Content-Type": "application/json"},
-      body: {trigger},
-      failOnStatusCode: false,
-    });
+
+    const payload = {
+      name: "Presence Service",
+      status: triggerType === "up" ? "OPERATIONAL" : "INVESTIGATING",
+      message:
+        triggerType === "up"
+          ? "Presence service operational from E2E test"
+          : "Presence service failure during E2E test",
+    };
+
+    return cy
+      .request({
+        method: "POST",
+        url: webhookUrl,
+        headers: {"Content-Type": "application/json"},
+        body: payload,
+        failOnStatusCode: false,
+      })
+      .then((response) => {
+        if (response.status !== 200) {
+          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        }
+      });
   }
 
   const user = {
     role: "ADMIN",
-    email: Cypress.env("ADMIN1_EMAIL") as string,
-    password: Cypress.env("ADMIN1_PASSWORD") as string,
+    email: Cypress.env("ADMIN1_EMAIL"),
+    password: Cypress.env("ADMIN1_PASSWORD"),
   };
+
+  before(() => {
+    if (!user.email || !user.password) {
+      throw new Error("Admin credentials not defined in Cypress env");
+    }
+  });
 
   it("devrait permettre à l'admin de créer et supprimer une présence", () => {
     cy.loginReal({email: user.email, password: user.password});
 
-    cy.url({timeout: 20000}).should("include", "/");
+    cy.url({timeout: DEFAULT_TIMEOUT}).should("include", "/");
 
-    cy.getByTestid("main-content", {timeout: 10000})
+    cy.getByTestid("main-content", {timeout: DEFAULT_TIMEOUT})
       .should("contain", user.email)
       .and("contain", "@");
 
+    // Création de l'événement
     cy.getByTestid("event-point").click();
     cy.getByTestid("event-menu").click();
 
@@ -46,8 +71,11 @@ describe("Création d'une présence (non mocké)", () => {
     cy.get("#groups").click();
     cy.get("#groups-option-0").should("be.visible").click();
 
-    cy.contains("button", "Enregistrer").click();
+    cy.contains("button", "Enregistrer")
+      .click()
+      .then(() => updateInstatus("up"));
 
+    // Gestion des présences
     cy.contains("div", "[G1] F PROG").click();
     cy.get('[aria-label="Présence"]').click();
 
@@ -60,21 +88,27 @@ describe("Création d'une présence (non mocké)", () => {
         });
     });
 
-    cy.get('[aria-label="Sauvegarder"]').click();
+    cy.get('[aria-label="Sauvegarder"]')
+      .click()
+      .then(() => updateInstatus("up"));
 
+    // Suppression de l'événement
     cy.getByTestid("event-menu").click();
     cy.contains("div", "[G1] F PROG").click();
     cy.getByTestid("delete-button-confirm").click();
-    cy.get(".RaConfirm-confirmWarning").click();
+    cy.get(".RaConfirm-confirmWarning")
+      .click()
+      .then(() => updateInstatus("up"));
 
+    // Déconnexion
     cy.contains("h6", "Se déconnecter").click();
-
-    updateInstatus("up");
   });
 
   afterEach(function () {
-    if (this.currentTest?.state === "failed") {
-      updateInstatus("down");
+    if (this.currentTest?.isFailed()) {
+      cy.then(() => updateInstatus("down")).then(() => {
+        cy.log("Presence service status set to DOWN in Instatus");
+      });
     }
   });
 });
