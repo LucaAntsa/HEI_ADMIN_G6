@@ -27,7 +27,7 @@ export default defineConfig({
       codeCoverageTask(on, config);
       return config;
     },
-    baseUrl: "http://localhost:5173/",
+    baseUrl: process.env.CYPRESS_BASE_URL || "http://localhost:5173",
     specPattern: "cypress/e2e/**/*",
   },
   retries: {
@@ -35,18 +35,14 @@ export default defineConfig({
     openMode: 0,
   },
   env: {
-    REACT_APP_TEST_STUDENT1_PASSWORD:
-      process.env.REACT_APP_TEST_STUDENT1_PASSWORD,
-    REACT_APP_TEST_TEACHER1_PASSWORD:
-      process.env.REACT_APP_TEST_TEACHER1_PASSWORD,
-    REACT_APP_TEST_MANAGER1_PASSWORD:
-      process.env.REACT_APP_TEST_MANAGER1_PASSWORD,
-    REACT_APP_TEST_MONITOR1_PASSWORD:
-      process.env.REACT_APP_TEST_MONITOR1_PASSWORD,
-    REACT_APP_TEST_ADMIN1_PASSWORD: process.env.REACT_APP_TEST_ADMIN1_PASSWORD,
-    REACT_APP_TEST_STAFF1_PASSWORD: process.env.REACT_APP_TEST_STAFF1_PASSWORD,
-    REACT_APP_TEST_ORGANIZER1_PASSWORD:
-      process.env.REACT_APP_TEST_ORGANIZER1_PASSWORD,
+    CYPRESS_BASE_URL: process.env.CYPRESS_BASE_URL,
+    STUDENT1_PASSWORD: process.env.STUDENT1_PASSWORD,
+    TEACHER1_PASSWORD: process.env.TEACHER1_PASSWORD,
+    MANAGER1_PASSWORD: process.env.MANAGER1_PASSWORD,
+    MONITOR1_PASSWORD: process.env.MONITOR1_PASSWORD,
+    ADMIN1_PASSWORD: process.env.ADMIN1_PASSWORD,
+    STAFF1_PASSWORD: process.env.STAFF1_PASSWORD,
+    ORGANIZER1_PASSWORD: process.env.ORGANIZER1_PASSWORD,
     codeCoverage: {
       exclude: ["cypress/**/*.*", "src/**/*.cy", "src/providers/**/*.*"],
     },

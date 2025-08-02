@@ -8,7 +8,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {mainTheme} from "../haTheme";
 import authProvider from "../providers/authProvider";
 import CasdoorLoginCard from "./CasdoorLoginCard";
@@ -137,11 +137,13 @@ const HaLoginPage = () => {
       style={{
         backgroundImage: "url(/login-bg100k.jpg)",
         backgroundSize: "cover",
-        position: "fixed",
+        position: "relative",
         padding: "0",
         margin: "0",
         width: "100%",
         height: "100%",
+        minHeight: "100vh",
+        paddingBottom: "50px",
       }}
     >
       {displayFull ? (
@@ -210,6 +212,33 @@ const HaLoginPage = () => {
       ) : (
         <PasswordChangeableLogin />
       )}
+
+      {/* 🔗 LIEN PUBLIC INSTATUS Groupe 6 */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          width: "100%",
+          textAlign: "center",
+        }}
+      >
+        <Button
+          component={Link}
+          to="/status"
+          variant="contained"
+          color="primary"
+          size="small"
+          sx={{
+            textTransform: "none",
+            fontWeight: 500,
+            borderRadius: "20px",
+            px: 3,
+            py: 1,
+          }}
+        >
+          📡 Voir Instatus HEI ADMIN
+        </Button>
+      </div>
     </div>
   );
 };

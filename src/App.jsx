@@ -1,7 +1,8 @@
 import {mainTheme} from "@/haTheme";
+import StatusPage from "@/instatus/Instatus.G6";
 import announcements from "@/operations/announcements";
+import awardedCourses from "@/operations/awardedCourses";
 import course from "@/operations/course";
-import CourseAssignments from "@/operations/CourseAssignments";
 import staffDocs from "@/operations/docs/staffs/index";
 import studentDocs from "@/operations/docs/students";
 import teachersDocs from "@/operations/docs/teachers";
@@ -68,8 +69,8 @@ function AppBase() {
       <Resource name="users-letters" />
       <Resource name="letters" />
       <Resource
-        name="course-assignments"
-        {...CourseAssignments}
+        name="awarded-courses"
+        {...awardedCourses}
         options={{label: " "}}
       />
       <Resource name="exams" {...exams} />
@@ -276,6 +277,8 @@ function App() {
             element={<CasdoorAuthCallback />}
           />
           <Route path="/calendar" element={<publicContent.calendar />} />
+          <Route path="/status" element={<StatusPage />} />{" "}
+          {/* Ajout de Instatus Page*/}
           <Route path="/human-verification" element={<HumanVerification />} />
           <Route path="*" element={<AppBase />} />
         </Routes>
