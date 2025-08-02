@@ -124,6 +124,15 @@ jobs:
         with:
           command: npx cypress run --e2e --env codeCoverage=true
 
+      # uploader les screenshots
+      - name: Upload Cypress screenshots
+        if: failure() # Seulement si des tests échouent
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          retention-days: 1
+
       - name: Merge reports + Sonar
         if: always()
         run: |
@@ -146,19 +155,19 @@ jobs:
         run: |
           curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "resolved", "message": "Payment back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_AUTH_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "resolved", "message": "Auth back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "resolved", "message": "Presence back up from GitHub CI"}'
 
           curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "resolved", "message": "Etudiant back up from GitHub CI"}'
 
       - name: Instatus update (DOWN if failure)
         if: failure()
@@ -170,19 +179,19 @@ jobs:
         run: |
           curl -X POST $INSTATUS_PAYMENT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "investigating", "message": "Payment failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_AUTH_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "investigating", "message": "Auth failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_PRESENCE_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "investigating", "message": "Presence failed in GitHub CI"}'
 
           curl -X POST $INSTATUS_ETUDIANT_WEBHOOK \
           -H 'Content-Type: application/json' \
-          -d '{"trigger": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
+          -d '{"trigger_type": "incident", "status": "investigating", "message": "Etudiant failed in GitHub CI"}'
 
   build:
     runs-on: ubuntu-latest

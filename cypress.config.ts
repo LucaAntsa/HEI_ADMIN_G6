@@ -6,6 +6,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default defineConfig({
+  // Configuration des screenshots
+  screenshotOnRunFailure: true,
+  screenshotsFolder: "cypress/screenshots",
+  trashAssetsBeforeRuns: true,
+  video: false,
+
   viewportHeight: 1080,
   viewportWidth: 1920,
   defaultCommandTimeout: 25_000,
