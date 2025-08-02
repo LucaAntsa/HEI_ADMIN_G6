@@ -123,7 +123,7 @@ jobs:
       - name: Run Cypress tests on preprod
         env:
           CYPRESS_INSTATUS_API_KEY: ${{secrets.INSTATUS_API_KEY}}
-          CYPRESS_INSTATUS_API_URL: https://api.instatus.com/v3
+          CYPRESS_INSTATUS_API_URL: ${{secrets.INSTATUS_API_URL}}
           CYPRESS_INSTATUS_PAGE_ID: ${{ secrets.INSTATUS_PAGE_ID }}
 
           CYPRESS_INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID}}
@@ -178,7 +178,7 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
-      - name: Instatus update (UP)
+      - name: Update Instatus (Success)
         if: success()
         env:
           INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
@@ -195,18 +195,20 @@ jobs:
 
           for service in "${services[@]}"; do
             IFS=':' read -r service_name component_id description <<< "$service"
-            curl -X POST \
+            curl -v -X POST \
               "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
               -H "Authorization: Bearer $INSTATUS_API_KEY" \
               -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
               -d '{
                 "status": "operational",
                 "name": "'"${service_name^}"' Service",
-                "description": "'"$description"'"
-              }' || echo "Failed to update ${service_name} status"
+                "description": "'"$description"' - $(date +"%Y-%m-%d %H:%M")",
+                "shouldSendNotification": true
+              }' || echo "Échec de la mise à jour du statut ${service_name}"
           done
 
-      - name: Instatus update (DOWN if failure)
+      - name: Update Instatus (Failure)
         if: failure()
         env:
           INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
@@ -223,15 +225,17 @@ jobs:
 
           for service in "${services[@]}"; do
             IFS=':' read -r service_name component_id description <<< "$service"
-            curl -X POST \
+            curl -v -X POST \
               "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
               -H "Authorization: Bearer $INSTATUS_API_KEY" \
               -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
               -d '{
                 "status": "major_outage",
                 "name": "'"${service_name^}"' Service",
-                "description": "'"$description"'"
-              }' || echo "Failed to update ${service_name} status"
+                "description": "'"$description"' - $(date +"%Y-%m-%d %H:%M")",
+                "shouldSendNotification": true
+              }' || echo "Échec de la mise à jour du statut ${service_name}"
           done
 
   build:
