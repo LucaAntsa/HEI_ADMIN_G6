@@ -188,9 +188,19 @@ jobs:
         run: |
           for service in "Payment" "Auth" "Presence" "Etudiant"; do
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
-            curl -X POST "${!webhook_var}" \
+            echo "Updating $service status to DOWN..."
+            response=$(curl -s -w "\n%{http_code}" -X POST "${!webhook_var}" \
               -H 'Content-Type: application/json' \
-              -d '{"trigger": "down"}' || echo "Échec mise à jour ${service}"
+              -d '{"trigger": "down"}')
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | head -n -1)
+            
+            if [ "$http_code" -eq 200 ]; then
+              echo "Success: $body"
+            else
+              echo "Failed to update $service (HTTP $http_code): $body"
+            fi
           done
 
       - name: Instatus update (UP)
@@ -203,9 +213,19 @@ jobs:
         run: |
           for service in "Payment" "Auth" "Presence" "Etudiant"; do
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
-            curl -X POST "${!webhook_var}" \
+            echo "Updating $service status to UP..."
+            response=$(curl -s -w "\n%{http_code}" -X POST "${!webhook_var}" \
               -H 'Content-Type: application/json' \
-              -d '{"trigger": "up"}' || echo "Échec mise à jour ${service}"
+              -d '{"trigger": "up"}')
+            
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | head -n -1)
+            
+            if [ "$http_code" -eq 200 ]; then
+              echo "Success: $body"
+            else
+              echo "Failed to update $service (HTTP $http_code): $body"
+            fi
           done
 
   build:
