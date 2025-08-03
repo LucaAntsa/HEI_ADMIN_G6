@@ -15,6 +15,10 @@ env:
   INSTATUS_API_URL: https://api.instatus.com/v3
   INSTATUS_PAGE_ID: ${{ secrets.INSTATUS_PAGE_ID }}
   INSTATUS_API_KEY: ${{ secrets.INSTATUS_API_KEY }}
+  INSTATUS_ETUDIANT_WEBHOOK: https://api.instatus.com/v3/integrations/webhook/cmdk1b4yn008z10vtitonmsmm
+  INSTATUS_PAYMENT_WEBHOOK: https://api.instatus.com/v3/integrations/webhook/cmdk9vby1002jklp1iku4aife
+  INSTATUS_PRESENCE_WEBHOOK: https://api.instatus.com/v3/integrations/webhook/cmdlhg8hk0285pa7fastqd5je
+  INSTATUS_AUTH_WEBHOOK: https://api.instatus.com/v3/integrations/webhook/cmdhd6maq003ji25slzy5nfc7
   #EMAIL
   MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
   MONITOR1_EMAIL: ${{ secrets.MONITOR1_EMAIL }}
