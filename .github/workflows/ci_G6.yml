@@ -2,11 +2,9 @@ name: CI_Preprod_Groupe6
 
 on:
   push:
-    branches:
-      - "*"
+    branches: ["*"]
   pull_request:
-    branches:
-      - "*"
+    branches: ["*"]
   workflow_dispatch:
   schedule:
     - cron: "0 3,11,19 * * *"
@@ -15,13 +13,13 @@ env:
   INSTATUS_API_URL: https://api.instatus.com/v3
   INSTATUS_PAGE_ID: ${{ secrets.INSTATUS_PAGE_ID }}
   INSTATUS_API_KEY: ${{ secrets.INSTATUS_API_KEY }}
-  #EMAIL
+  # Email
   MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
   MONITOR1_EMAIL: ${{ secrets.MONITOR1_EMAIL }}
   TEACHER1_EMAIL: ${{ secrets.TEACHER1_EMAIL }}
   ADMIN1_EMAIL: ${{ secrets.ADMIN1_EMAIL }}
   STUDENT1_EMAIL: ${{ secrets.STUDENT1_EMAIL }}
-  #Commande
+  # Commandes
   REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
   REACT_APP_AWS_REGION: eu-west-3
   STUDENT1_PASSWORD: ${{ secrets.STUDENT1_PASSWORD }}
@@ -49,10 +47,10 @@ jobs:
         with:
           node-version: 18.19.0
 
-      - name: Supprimer .npmrc global (si présent)
+      - name: Supprimer .npmrc global
         run: rm -f ~/.npmrc
 
-      - name: Supprimer .npmrc local (si présent)
+      - name: Supprimer .npmrc local
         run: rm -f .npmrc
 
       - name: Configure AWS credentials (prod)
@@ -80,6 +78,8 @@ jobs:
   test-e2e:
     timeout-minutes: 35
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,13 +94,13 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: Supprimer .npmrc global (si présent)
+      - name: Supprimer .npmrc global
         run: rm -f ~/.npmrc
 
-      - name: Supprimer .npmrc local (si présent)
+      - name: Supprimer .npmrc local
         run: rm -f .npmrc
 
-      - name: Configurer AWS + npmrc (prod puis preprod)
+      - name: Configurer AWS + npmrc
         run: |
           aws configure set aws_access_key_id ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
@@ -110,7 +110,6 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.PREPROD_AWS_SECRET_ACCESS_KEY }}
           sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
-      - run: npm install --location=global sonar-scanner
       - run: npm install --save-dev ts-node typescript
 
       - name: Read version
@@ -122,31 +121,26 @@ jobs:
 
       - name: Run Cypress tests on preprod
         env:
-          CYPRESS_INSTATUS_API_KEY: ${{secrets.INSTATUS_API_KEY}}
-          CYPRESS_INSTATUS_API_URL: ${{secrets.INSTATUS_API_URL}}
+          CYPRESS_INSTATUS_API_KEY: ${{ secrets.INSTATUS_API_KEY }}
+          CYPRESS_INSTATUS_API_URL: ${{ secrets.INSTATUS_API_URL }}
           CYPRESS_INSTATUS_PAGE_ID: ${{ secrets.INSTATUS_PAGE_ID }}
-
-          CYPRESS_INSTATUS_AUTH_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_COMPONENT_ID}}
-          CYPRESS_INSTATUS_PAYMENT_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_COMPONENT_ID}}
-          CYPRESS_INSTATUS_ETUDIANT_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_COMPONENT_ID}}
-          CYPRESS_INSTATUS_PRESENCE_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_COMPONENT_ID}}
-
+          CYPRESS_INSTATUS_AUTH_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_COMPONENT_ID }}
+          CYPRESS_INSTATUS_PAYMENT_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_COMPONENT_ID }}
+          CYPRESS_INSTATUS_ETUDIANT_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_COMPONENT_ID }}
+          CYPRESS_INSTATUS_PRESENCE_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_COMPONENT_ID }}
           CYPRESS_INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
           CYPRESS_INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
           CYPRESS_INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
-
-          CYPRESS_ADMIN1_EMAIL: ${{secrets.ADMIN1_EMAIL}}
-          CYPRESS_MONITOR1_EMAIL: ${{secrets.MONITOR1_EMAIL}}
-          CYPRESS_TEACHER1_EMAIL: ${{secrets.TEACHER1_EMAIL}}
-          CYPRESS_STUDENT1_EMAIL: ${{secrets.STUDENT1_EMAIL}}
-          CYPRESS_MANAGER1_EMAIL: ${{secrets.MANAGER1_EMAIL}}
-
-          CYPRESS_STUDENT1_PASSWORD: ${{secrets.STUDENT1_PASSWORD}}
-          CYPRESS_MANAGER1_PASSWORD: ${{secrets.MANAGER1_PASSWORD}}
-          CYPRESS_MONITOR1_PASSWORD: ${{secrets.MONITOR1_PASSWORD}}
-          CYPRESS_TEACHER1_PASSWORD: ${{secrets.TEACHER1_PASSWORD}}
-          CYPRESS_ADMIN1_PASSWORD: ${{secrets.ADMIN1_PASSWORD}}
-          CYPRESS_TOKEN: ${{secrets.SONAR_TOKEN}}
+          CYPRESS_ADMIN1_EMAIL: ${{ secrets.ADMIN1_EMAIL }}
+          CYPRESS_MONITOR1_EMAIL: ${{ secrets.MONITOR1_EMAIL }}
+          CYPRESS_TEACHER1_EMAIL: ${{ secrets.TEACHER1_EMAIL }}
+          CYPRESS_STUDENT1_EMAIL: ${{ secrets.STUDENT1_EMAIL }}
+          CYPRESS_MANAGER1_EMAIL: ${{ secrets.MANAGER1_EMAIL }}
+          CYPRESS_STUDENT1_PASSWORD: ${{ secrets.STUDENT1_PASSWORD }}
+          CYPRESS_MANAGER1_PASSWORD: ${{ secrets.MANAGER1_PASSWORD }}
+          CYPRESS_MONITOR1_PASSWORD: ${{ secrets.MONITOR1_PASSWORD }}
+          CYPRESS_TEACHER1_PASSWORD: ${{ secrets.TEACHER1_PASSWORD }}
+          CYPRESS_ADMIN1_PASSWORD: ${{ secrets.ADMIN1_PASSWORD }}
           CYPRESS_BASE_URL: https://preprod.admin.hei.school
         uses: cypress-io/github-action@v6
         with:
@@ -161,21 +155,19 @@ jobs:
           path: cypress/screenshots/
           retention-days: 1
 
-      - name: SonarQube Analysis
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_CONVENTIONAL_CHANGELOG }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Generate coverage report
         run: |
           npx nyc report --reporter=lcov
           npm run test:merge:reports
-          sonar-scanner \
-            -Dsonar.projectVersion=${{ steps.read-version.outputs.version }} \
-            -Dsonar.organization=hei-school \
-            -Dsonar.projectKey=hei_admin-ui \
-            -Dsonar.branch.name=${{ github.ref_name }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            coverage/lcov.info
+            cypress/results/results.json
+          retention-days: 1
 
       - name: Instatus update (DOWN if failure)
         if: failure()
@@ -225,6 +217,41 @@ jobs:
             fi
           done
 
+  sonar-analysis:
+    needs: test-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18.19.0
+
+      - uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - run: npm install --location=global sonar-scanner
+
+      - name: SonarQube Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_CONVENTIONAL_CHANGELOG }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          sonar-scanner \
+            -Dsonar.projectVersion=${{ needs.test-e2e.outputs.version }} \
+            -Dsonar.organization=hei-school \
+            -Dsonar.projectKey=hei_admin-ui \
+            -Dsonar.branch.name=${{ github.ref_name }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -258,7 +285,7 @@ jobs:
 
       - run: sh ./initNpmrc.sh hei-store npm-hei-lab 057045785189
 
-      - name: Installer les dépendances et builder avec plus de mémoire
+      - name: Installer les dépendances et builder
         run: |
           npm ci
           NODE_OPTIONS="--max-old-space-size=4096" npm run build
