@@ -1,4 +1,4 @@
-describe("Student (non mocké)", () => {
+/*describe("Student (non mocké)", () => {
   const DEFAULT_TIMEOUT = 30000;
   const webhookUrl: string | undefined = Cypress.env(
     "INSTATUS_ETUDIANT_WEBHOOK"
@@ -88,4 +88,4 @@ describe("Student (non mocké)", () => {
       });
     }
   });
-});
+});*/

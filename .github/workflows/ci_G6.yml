@@ -133,7 +133,6 @@ jobs:
 
           CYPRESS_INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
           CYPRESS_INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
-          CYPRESS_INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
           CYPRESS_INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
 
           CYPRESS_ADMIN1_EMAIL: ${{secrets.ADMIN1_EMAIL}}
@@ -184,7 +183,6 @@ jobs:
           INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
           INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
-          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
           for service in "Payment" "Auth" "Presence" "Etudiant"; do
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
@@ -209,7 +207,6 @@ jobs:
           INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
           INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
           INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
-          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
           for service in "Payment" "Auth" "Presence" "Etudiant"; do
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
