@@ -11,13 +11,7 @@ describe("Authentification (non mocké)", () => {
     }
 
     const payload = {
-      trigger: "incident",
-      status: triggerType === "up" ? "resolved" : "investigating",
-      message:
-        triggerType === "up"
-          ? "Authentification opérationnelle"
-          : "Échec d'authentification détecté",
-      name: "Auth Service",
+      trigger: triggerType,
     };
 
     return cy
@@ -31,6 +25,8 @@ describe("Authentification (non mocké)", () => {
       .then((response) => {
         if (response.status !== 200) {
           cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        } else {
+          cy.log(`Instatus status set to ${triggerType.toUpperCase()}`);
         }
       });
   }

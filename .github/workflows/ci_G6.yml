@@ -190,14 +190,7 @@ jobs:
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
             curl -X POST "${!webhook_var}" \
               -H 'Content-Type: application/json' \
-              -d '{
-                "name": "'"${service}"' Service Failure",
-                "status": "investigating",
-                "message": "Problème détecté sur le service '"${service}"' - GitHub CI",
-                "components": [],
-                "notify": true,
-                "visibility": "public"
-              }' || echo "Échec mise à jour ${service}"
+              -d '{"trigger": "down"}' || echo "Échec mise à jour ${service}"
           done
 
       - name: Instatus update (UP)
@@ -212,14 +205,7 @@ jobs:
             webhook_var="INSTATUS_${service^^}_WEBHOOK"
             curl -X POST "${!webhook_var}" \
               -H 'Content-Type: application/json' \
-              -d '{
-                "name": "'"${service}"' Service Restored",
-                "status": "resolved",
-                "message": "Service '"${service}"' rétabli - GitHub CI",
-                "components": [],
-                "notify": true,
-                "visibility": "public"
-              }' || echo "Échec mise à jour ${service}"
+              -d '{"trigger": "up"}' || echo "Échec mise à jour ${service}"
           done
 
   build:

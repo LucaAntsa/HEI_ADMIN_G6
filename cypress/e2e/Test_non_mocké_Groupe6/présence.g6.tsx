@@ -13,13 +13,7 @@ describe("Création d'une présence (non mocké)", () => {
     }
 
     const payload = {
-      trigger: "incident",
-      status: triggerType === "up" ? "resolved" : "investigating",
-      message:
-        triggerType === "up"
-          ? "Service Présence opérationnel (tests E2E passés)"
-          : "Problème détecté sur le service Présence (tests E2E échoués)",
-      name: "Présence Service",
+      trigger: triggerType,
     };
 
     return cy
@@ -33,6 +27,10 @@ describe("Création d'une présence (non mocké)", () => {
       .then((response) => {
         if (response.status !== 200) {
           cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        } else {
+          cy.log(
+            `Presence service status set to ${triggerType.toUpperCase()} in Instatus`
+          );
         }
       });
   }

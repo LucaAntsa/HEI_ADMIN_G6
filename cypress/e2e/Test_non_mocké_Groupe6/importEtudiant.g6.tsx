@@ -13,13 +13,7 @@ describe("Student (non mocké)", () => {
     }
 
     const payload = {
-      trigger: "incident",
-      status: triggerType === "up" ? "resolved" : "investigating",
-      message:
-        triggerType === "up"
-          ? "Service Étudiant opérationnel (tests E2E passés)"
-          : "Problème détecté sur le service Étudiant (tests E2E échoués)",
-      name: "Student Service",
+      trigger: triggerType,
     };
 
     return cy
@@ -33,6 +27,10 @@ describe("Student (non mocké)", () => {
       .then((response) => {
         if (response.status !== 200) {
           cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        } else {
+          cy.log(
+            `Student service status set to ${triggerType.toUpperCase()} in Instatus`
+          );
         }
       });
   }

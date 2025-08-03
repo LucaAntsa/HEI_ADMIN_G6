@@ -13,13 +13,7 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
     }
 
     const payload = {
-      trigger: "incident",
-      status: triggerType === "up" ? "resolved" : "investigating",
-      message:
-        triggerType === "up"
-          ? "Service Payment opérationnel (tests E2E passés)"
-          : "Problème détecté sur le service Payment (tests E2E échoués)",
-      name: "Payment Service",
+      trigger: triggerType,
     };
 
     return cy
@@ -33,6 +27,10 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
       .then((response) => {
         if (response.status !== 200) {
           cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
+        } else {
+          cy.log(
+            `Payment service status set to ${triggerType.toUpperCase()} in Instatus`
+          );
         }
       });
   }
