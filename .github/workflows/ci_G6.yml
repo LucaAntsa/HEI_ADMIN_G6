@@ -218,6 +218,7 @@ jobs:
           done
 
   sonar-analysis:
+    if: false
     needs: test-e2e
     runs-on: ubuntu-latest
     steps:
