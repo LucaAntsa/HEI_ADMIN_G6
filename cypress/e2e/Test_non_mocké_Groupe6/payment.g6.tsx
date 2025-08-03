@@ -78,17 +78,16 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
         beforeEach(() => {
           cy.getByTestid("students-menu").click();
           cy.get(`[href="/transactions"]`).click();
-          cy.contains("Transactions (Mobile Money)", {
-            timeout: DEFAULT_TIMEOUT,
-          }).should("be.visible");
-          cy.get("table.MuiTable-root", {timeout: DEFAULT_TIMEOUT}).should(
-            "exist"
+          cy.contains("Transactions (Mobile Money)", {timeout: 30000}).should(
+            "be.visible"
           );
+          cy.get("table.MuiTable-root", {timeout: 30000}).should("exist");
         });
 
         it("Manager : Création de frais pour un étudiant", () => {
-          cy.contains("Liste des étudiants").click();
+          cy.contains("Liste des étudiants").should("be.visible").click();
           cy.url().should("include", "/students");
+
           cy.get('[data-testid="main-search-filter"]').type("ryan{enter}");
           cy.contains("ryan", {matchCase: false}).click();
 
@@ -100,30 +99,54 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
 
           cy.get("#predefinedType").click();
           cy.contains("li", "Rattrapage").click();
+
           cy.get(".MuiToolbar-root > .MuiButtonBase-root").click();
         });
 
-        ["SUCCESS", "PENDING", "FAILED"].forEach((status) => {
-          it(`affiche l'icône correcte lorsque le statut est ${status}`, () => {
-            const statusMap = {
-              SUCCESS: "Paiement avec succès",
-              PENDING: "Vérification en cours",
-              FAILED: "Paiement échoué",
-            };
+        it("affiche l'icône succès lorsque le statut est SUCCESS", () => {
+          cy.get('[data-testid^="pspTypeIcon-"]').then(($icons) => {
+            const icon = Array.from($icons).find((el) =>
+              el.title?.toLowerCase().includes("success")
+            );
+            if (icon) {
+              cy.wrap(icon).trigger("mouseover");
+              cy.contains("Paiement avec succès");
+            } else {
+              cy.log("Pas de transaction en succès trouvée");
+              expect(true).to.be.true;
+            }
+          });
+        });
 
-            cy.get('[data-testid^="pspTypeIcon-"]').then(($icons) => {
-              const icon = Array.from($icons).find((el) =>
-                el.title?.toLowerCase().includes(status.toLowerCase())
-              );
+        it("affiche l'icône en attente lorsque le statut est PENDING", () => {
+          cy.get('[data-testid^="pspTypeIcon-"]').then(($icons) => {
+            const icon = Array.from($icons).find((el) =>
+              el.title?.toLowerCase().includes("pending")
+            );
+            if (icon) {
+              cy.wrap(icon).trigger("mouseover");
+              cy.contains("Vérification en cours");
+            } else {
+              cy.log("Pas de transaction en attente trouvée");
+              expect(true).to.be.true;
+            }
+          });
+        });
 
-              if (icon) {
-                cy.wrap(icon).trigger("mouseover");
-                cy.contains(statusMap[status as keyof typeof statusMap]);
-              } else {
-                cy.log(`Pas de transaction avec le statut ${status} trouvée`);
-                expect(true).to.be.true;
-              }
-            });
+        it("affiche l'icône échec lorsque le statut est FAILED", () => {
+          cy.get('[data-testid^="pspTypeIcon-"]').then(($icons) => {
+            const icon = Array.from($icons).find(
+              (el) =>
+                el.title?.toLowerCase().includes("failed") ||
+                el.title?.toLowerCase().includes("échec")
+            );
+            if (icon) {
+              cy.wrap(icon).trigger("mouseover");
+              cy.contains("Paiement échoué");
+            } else {
+              cy.log("Pas de transaction échouée trouvée");
+              expect(true).to.be.true;
+            }
           });
         });
       }
