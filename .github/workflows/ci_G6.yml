@@ -178,25 +178,6 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
-      - name: Instatus update (UP)
-        if: success()
-        env:
-          INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
-          INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
-          INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
-          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
-        run: |
-          for service in "Payment" "Auth" "Presence" "Etudiant"; do
-            webhook_var="INSTATUS_${service^^}_WEBHOOK"
-            curl -X POST "${!webhook_var}" \
-              -H 'Content-Type: application/json' \
-              -d '{
-                "trigger": "incident",
-                "status": "resolved",
-                "message": "'"${service}"' service restored - GitHub CI"
-              }' || echo "Échec mise à jour ${service}"
-          done
-
       - name: Instatus update (DOWN if failure)
         if: failure()
         env:
@@ -210,9 +191,34 @@ jobs:
             curl -X POST "${!webhook_var}" \
               -H 'Content-Type: application/json' \
               -d '{
-                "trigger": "incident",
+                "name": "'"${service}"' Service Failure",
                 "status": "investigating",
-                "message": "'"${service}"' service failure - GitHub CI"
+                "message": "Problème détecté sur le service '"${service}"' - GitHub CI",
+                "components": [],
+                "notify": true,
+                "visibility": "public"
+              }' || echo "Échec mise à jour ${service}"
+          done
+
+      - name: Instatus update (UP)
+        if: success()
+        env:
+          INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
+          INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
+          INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
+          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
+        run: |
+          for service in "Payment" "Auth" "Presence" "Etudiant"; do
+            webhook_var="INSTATUS_${service^^}_WEBHOOK"
+            curl -X POST "${!webhook_var}" \
+              -H 'Content-Type: application/json' \
+              -d '{
+                "name": "'"${service}"' Service Restored",
+                "status": "resolved",
+                "message": "Service '"${service}"' rétabli - GitHub CI",
+                "components": [],
+                "notify": true,
+                "visibility": "public"
               }' || echo "Échec mise à jour ${service}"
           done
 
