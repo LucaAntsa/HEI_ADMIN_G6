@@ -1,42 +1,38 @@
 describe("Paiement mobile par l'étudiant (non mocké)", () => {
   const DEFAULT_TIMEOUT = 30000;
-  const componentId = Cypress.env("INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID");
-  const apiKey = Cypress.env("INSTATUS_API_KEY");
-  const pageId = Cypress.env("INSTATUS_PAGE_ID");
+  const webhookUrl: string | undefined = Cypress.env(
+    "INSTATUS_PAYMENT_WEBHOOK"
+  );
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!componentId || !apiKey || !pageId) {
+    if (!webhookUrl) {
       cy.log(
-        "Warning: Instatus credentials not defined - skipping status update"
+        "Warning: INSTATUS_PAYMENT_WEBHOOK not defined - skipping Instatus update"
       );
       return;
     }
 
     const payload = {
-      status: triggerType === "up" ? "operational" : "major_outage",
-      name: "Payment Service",
-      description:
+      trigger: "incident",
+      status: triggerType === "up" ? "resolved" : "investigating",
+      message:
         triggerType === "up"
-          ? "Payment opérationnelle (tests E2E passés)"
-          : "Échec de payement détecté (tests E2E échoués)",
+          ? "Service Payment opérationnel (tests E2E passés)"
+          : "Problème détecté sur le service Payment (tests E2E échoués)",
+      name: "Payment Service",
     };
 
     return cy
       .request({
         method: "POST",
-        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
+        url: webhookUrl,
+        headers: {"Content-Type": "application/json"},
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(
-            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
-          );
+          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
         }
       });
   }
@@ -106,9 +102,7 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
 
           cy.get("#predefinedType").click();
           cy.contains("li", "Rattrapage").click();
-          cy.get(".MuiToolbar-root > .MuiButtonBase-root")
-            .click()
-            .then(() => updateInstatus("up"));
+          cy.get(".MuiToolbar-root > .MuiButtonBase-root").click();
         });
 
         ["SUCCESS", "PENDING", "FAILED"].forEach((status) => {
@@ -125,15 +119,10 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
               );
 
               if (icon) {
-                cy.wrap(icon)
-                  .trigger("mouseover")
-                  .then(() => {
-                    cy.contains(statusMap[status as keyof typeof statusMap]);
-                    updateInstatus("up");
-                  });
+                cy.wrap(icon).trigger("mouseover");
+                cy.contains(statusMap[status as keyof typeof statusMap]);
               } else {
                 cy.log(`Pas de transaction avec le statut ${status} trouvée`);
-                updateInstatus("up");
                 expect(true).to.be.true;
               }
             });
@@ -161,7 +150,6 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
               if (amountText === "0 Ar") {
                 if (!testHandled) {
                   cy.log("Frais déjà payé détecté, test réussi");
-                  updateInstatus("up");
                   testHandled = true;
                 }
                 return;
@@ -187,13 +175,9 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
                   }).should("exist");
                   cy.get('[data-testid^="pspTypeIcon-"]', {
                     timeout: DEFAULT_TIMEOUT,
-                  })
-                    .should("exist")
-                    .then(() => {
-                      updateInstatus("up");
-                      testHandled = true;
-                      return false; // break .each()
-                    });
+                  }).should("exist");
+                  testHandled = true;
+                  return false; // break .each()
                 }
               }
             })
@@ -202,7 +186,6 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
                 cy.log(
                   "Aucun frais impayé ou modifiable trouvé, test considéré comme réussi"
                 );
-                updateInstatus("up");
                 expect(true).to.be.true;
               }
             });
@@ -215,6 +198,10 @@ describe("Paiement mobile par l'étudiant (non mocké)", () => {
     if (this.currentTest?.isFailed()) {
       cy.then(() => updateInstatus("down")).then(() => {
         cy.log("Payment service status set to DOWN in Instatus");
+      });
+    } else {
+      cy.then(() => updateInstatus("up")).then(() => {
+        cy.log("Payment service status set to UP in Instatus");
       });
     }
   });

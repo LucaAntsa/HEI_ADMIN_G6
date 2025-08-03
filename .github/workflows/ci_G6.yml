@@ -178,64 +178,42 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
-      - name: Update Instatus (Success)
+      - name: Instatus update (UP)
         if: success()
         env:
-          INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
+          INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
+          INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
+          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          services=(
-            "auth:$INSTATUS_AUTH_WEBHOOK_COMPONENT_ID:Authentification opérationnelle (tests E2E passés)"
-            "payment:$INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID:Service Payment opérationnel (tests E2E passés)"
-            "presence:$INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID:Service Presence opérationnel (tests E2E passés)"
-            "etudiant:$INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID:Service Etudiant opérationnel (tests E2E passés)"
-          )
-
-          for service in "${services[@]}"; do
-            IFS=':' read -r service_name component_id description <<< "$service"
-            curl -v -X POST \
-              "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
-              -H "Authorization: Bearer $INSTATUS_API_KEY" \
-              -H "Content-Type: application/json" \
-              -H "Accept: application/json" \
+          for service in "Payment" "Auth" "Presence" "Etudiant"; do
+            webhook_var="INSTATUS_${service^^}_WEBHOOK"
+            curl -X POST "${!webhook_var}" \
+              -H 'Content-Type: application/json' \
               -d '{
-                "status": "operational",
-                "name": "'"${service_name^}"' Service",
-                "description": "'"$description"' - $(date +"%Y-%m-%d %H:%M")",
-                "shouldSendNotification": true
-              }' || echo "Échec de la mise à jour du statut ${service_name}"
+                "trigger": "incident",
+                "status": "resolved",
+                "message": "'"${service}"' service restored - GitHub CI"
+              }' || echo "Échec mise à jour ${service}"
           done
 
-      - name: Update Instatus (Failure)
+      - name: Instatus update (DOWN if failure)
         if: failure()
         env:
-          INSTATUS_AUTH_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_AUTH_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID }}
-          INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID }}
+          INSTATUS_PAYMENT_WEBHOOK: ${{ secrets.INSTATUS_PAYMENT_WEBHOOK }}
+          INSTATUS_AUTH_WEBHOOK: ${{ secrets.INSTATUS_AUTH_WEBHOOK }}
+          INSTATUS_PRESENCE_WEBHOOK: ${{ secrets.INSTATUS_PRESENCE_WEBHOOK }}
+          INSTATUS_ETUDIANT_WEBHOOK: ${{ secrets.INSTATUS_ETUDIANT_WEBHOOK }}
         run: |
-          services=(
-            "auth:$INSTATUS_AUTH_WEBHOOK_COMPONENT_ID:Échec d'authentification détecté (tests E2E échoués)"
-            "payment:$INSTATUS_PAYMENT_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Payment (tests E2E échoués)"
-            "presence:$INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Presence (tests E2E échoués)"
-            "etudiant:$INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID:Problème détecté sur le service Etudiant (tests E2E échoués)"
-          )
-
-          for service in "${services[@]}"; do
-            IFS=':' read -r service_name component_id description <<< "$service"
-            curl -v -X POST \
-              "$INSTATUS_API_URL/$INSTATUS_PAGE_ID/components/$component_id" \
-              -H "Authorization: Bearer $INSTATUS_API_KEY" \
-              -H "Content-Type: application/json" \
-              -H "Accept: application/json" \
+          for service in "Payment" "Auth" "Presence" "Etudiant"; do
+            webhook_var="INSTATUS_${service^^}_WEBHOOK"
+            curl -X POST "${!webhook_var}" \
+              -H 'Content-Type: application/json' \
               -d '{
-                "status": "major_outage",
-                "name": "'"${service_name^}"' Service",
-                "description": "'"$description"' - $(date +"%Y-%m-%d %H:%M")",
-                "shouldSendNotification": true
-              }' || echo "Échec de la mise à jour du statut ${service_name}"
+                "trigger": "incident",
+                "status": "investigating",
+                "message": "'"${service}"' service failure - GitHub CI"
+              }' || echo "Échec mise à jour ${service}"
           done
 
   build:

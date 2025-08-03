@@ -1,42 +1,38 @@
 describe("Création d'une présence (non mocké)", () => {
   const DEFAULT_TIMEOUT = 30000;
-  const componentId = Cypress.env("INSTATUS_PRESENCE_WEBHOOK_COMPONENT_ID");
-  const apiKey = Cypress.env("INSTATUS_API_KEY");
-  const pageId = Cypress.env("INSTATUS_PAGE_ID");
+  const webhookUrl: string | undefined = Cypress.env(
+    "INSTATUS_PRESENCE_WEBHOOK"
+  );
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!componentId || !apiKey || !pageId) {
+    if (!webhookUrl) {
       cy.log(
-        "Warning: Instatus credentials not defined - skipping status update"
+        "Warning: INSTATUS_PRESENCE_WEBHOOK not defined - skipping Instatus update"
       );
       return;
     }
 
     const payload = {
-      status: triggerType === "up" ? "operational" : "major_outage",
-      name: "Présence Service",
-      description:
+      trigger: "incident",
+      status: triggerType === "up" ? "resolved" : "investigating",
+      message:
         triggerType === "up"
-          ? "Présence opérationnelle (tests E2E passés)"
-          : "Échec de Présence détecté (tests E2E échoués)",
+          ? "Service Présence opérationnel (tests E2E passés)"
+          : "Problème détecté sur le service Présence (tests E2E échoués)",
+      name: "Présence Service",
     };
 
     return cy
       .request({
         method: "POST",
-        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
+        url: webhookUrl,
+        headers: {"Content-Type": "application/json"},
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(
-            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
-          );
+          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
         }
       });
   }
@@ -76,9 +72,7 @@ describe("Création d'une présence (non mocké)", () => {
     cy.get("#groups").click();
     cy.get("#groups-option-0").should("be.visible").click();
 
-    cy.contains("button", "Enregistrer")
-      .click()
-      .then(() => updateInstatus("up"));
+    cy.contains("button", "Enregistrer").click();
 
     // Gestion des présences
     cy.contains("div", "[G1] F PROG").click();
@@ -93,17 +87,13 @@ describe("Création d'une présence (non mocké)", () => {
         });
     });
 
-    cy.get('[aria-label="Sauvegarder"]')
-      .click()
-      .then(() => updateInstatus("up"));
+    cy.get('[aria-label="Sauvegarder"]').click();
 
     // Suppression de l'événement
     cy.getByTestid("event-menu").click();
     cy.contains("div", "[G1] F PROG").click();
     cy.getByTestid("delete-button-confirm").click();
-    cy.get(".RaConfirm-confirmWarning")
-      .click()
-      .then(() => updateInstatus("up"));
+    cy.get(".RaConfirm-confirmWarning").click();
 
     // Déconnexion
     cy.contains("h6", "Se déconnecter").click();
@@ -113,6 +103,10 @@ describe("Création d'une présence (non mocké)", () => {
     if (this.currentTest?.isFailed()) {
       cy.then(() => updateInstatus("down")).then(() => {
         cy.log("Presence service status set to DOWN in Instatus");
+      });
+    } else {
+      cy.then(() => updateInstatus("up")).then(() => {
+        cy.log("Presence service status set to UP in Instatus");
       });
     }
   });

@@ -1,42 +1,38 @@
 describe("Student (non mocké)", () => {
   const DEFAULT_TIMEOUT = 30000;
-  const componentId = Cypress.env("INSTATUS_ETUDIANT_WEBHOOK_COMPONENT_ID");
-  const apiKey = Cypress.env("INSTATUS_API_KEY");
-  const pageId = Cypress.env("INSTATUS_PAGE_ID");
+  const webhookUrl: string | undefined = Cypress.env(
+    "INSTATUS_ETUDIANT_WEBHOOK"
+  );
 
   function updateInstatus(triggerType: "up" | "down") {
-    if (!componentId || !apiKey || !pageId) {
+    if (!webhookUrl) {
       cy.log(
-        "Warning: Instatus credentials not defined - skipping status update"
+        "Warning: INSTATUS_ETUDIANT_WEBHOOK not defined - skipping Instatus update"
       );
       return;
     }
 
     const payload = {
-      status: triggerType === "up" ? "operational" : "major_outage",
-      name: "Etudiant Service",
-      description:
+      trigger: "incident",
+      status: triggerType === "up" ? "resolved" : "investigating",
+      message:
         triggerType === "up"
-          ? "Import Etudiant opérationnelle (tests E2E passés)"
-          : "Échec d'importation d'étudiant détecté (tests E2E échoués)",
+          ? "Service Étudiant opérationnel (tests E2E passés)"
+          : "Problème détecté sur le service Étudiant (tests E2E échoués)",
+      name: "Student Service",
     };
 
     return cy
       .request({
         method: "POST",
-        url: `https://api.instatus.com/v3/${pageId}/components/${componentId}`,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
+        url: webhookUrl,
+        headers: {"Content-Type": "application/json"},
         body: payload,
         failOnStatusCode: false,
       })
       .then((response) => {
         if (response.status !== 200) {
-          cy.log(
-            `Échec de la mise à jour Instatus: ${JSON.stringify(response.body)}`
-          );
+          cy.log(`Instatus update failed: ${JSON.stringify(response.body)}`);
         }
       });
   }
@@ -57,9 +53,10 @@ describe("Student (non mocké)", () => {
 
   it("lands on profile page with real data", () => {
     cy.get('[href="/profile"] > .MuiBox-root').click();
-    cy.get("#main-content", {timeout: DEFAULT_TIMEOUT})
-      .should("contain", email)
-      .then(() => updateInstatus("up"));
+    cy.get("#main-content", {timeout: DEFAULT_TIMEOUT}).should(
+      "contain",
+      email
+    );
 
     cy.get("#ha-menu")
       .should("not.contain", "Enseignants")
@@ -69,38 +66,27 @@ describe("Student (non mocké)", () => {
 
   it("can list fees", () => {
     cy.get(`[href*="/students/"][href*="/fees"]`).click();
-    cy.get("#main-content")
-      .should("contain", "Frais")
-      .then(() => updateInstatus("up"));
+    cy.get("#main-content").should("contain", "Frais");
 
     cy.get('td input[type="checkbox"]').should("not.exist");
     cy.get("td a").should("not.contain", "ÉDITER");
 
     cy.get("body").click(200, 0);
-
     cy.get('[data-testid^="showButton-student"]').first().click({force: true});
 
-    cy.get("#main-content")
-      .should("contain", "Paiements")
-      .then(() => updateInstatus("up"));
-
+    cy.get("#main-content").should("contain", "Paiements");
     cy.get("td").should("not.contain", "ÉDITER");
     cy.get(".RaList-main").should("not.contain", "CRÉER");
-  });
-
-  it("can detail fee (click on fee button)", () => {
-    cy.get(`[href*="/students/"][href*="/fees"]`).click();
-    cy.get('[data-testid^="showButton-student"]').first().click({force: true});
-
-    cy.get("#main-content")
-      .should("contain", "Paiements")
-      .then(() => updateInstatus("up"));
   });
 
   afterEach(function () {
     if (this.currentTest?.isFailed()) {
       cy.then(() => updateInstatus("down")).then(() => {
         cy.log("Student service status set to DOWN in Instatus");
+      });
+    } else {
+      cy.then(() => updateInstatus("up")).then(() => {
+        cy.log("Student service status set to UP in Instatus");
       });
     }
   });
