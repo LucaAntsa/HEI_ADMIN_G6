@@ -1,30 +1,59 @@
-import { usersApi, payingApi } from './api'
-import { HaDataProviderType } from './HaDataProviderType'
-import { EnableStatus } from 'src/gen/haClient'
+import {EnableStatus} from "@haapi/typescript-client";
+import {payingApi, usersApi} from "./api";
+import {HaDataProviderType} from "./HaDataProviderType";
 
 const studentProvider: HaDataProviderType = {
   async getList(page: number, perPage: number, filter: any) {
-    const result = await usersApi().getStudents(page, perPage, filter.ref, filter.first_name, filter.last_name)
-    return result.data
+    return usersApi()
+      .getStudents(
+        page,
+        perPage,
+        filter.ref,
+        filter.first_name,
+        filter.last_name,
+        filter.course_id,
+        filter.status,
+        filter.sex,
+        filter.work_study_status,
+        filter.commitment_begin_date,
+        filter.exclude_groups
+      )
+      .then((result) => ({data: result.data}));
   },
   async getOne(id: string) {
-    const result = await usersApi().getStudentById(id)
-    return result.data
+    const result = await usersApi().getStudentById(id);
+    return result.data;
   },
-  async saveOrUpdate(payload: any) {
-    if (payload[0].length > 1) {
-      // when we want to create student
-      const [fees, student] = payload[0]
-      Object.assign(student, { status: EnableStatus.Enabled })
-      const [studentResponse] = (await usersApi().createOrUpdateStudents([student])).data
-      fees.length !== 0 && (await payingApi().createStudentFees(studentResponse?.id!, fees))
-      return [studentResponse]
-    } else {
-      // for editing
-      const result = await usersApi().createOrUpdateStudents(payload)
-      return result.data
+  async saveOrUpdate(
+    payload: any,
+    Params = {isUpdate: true, dueDatetime: Date}
+  ) {
+    if (Params.isUpdate) {
+      const [student] = payload;
+      const result = await usersApi().updateStudent(student.id, student);
+      return [result.data];
     }
-  }
-}
+    let [fees, students] = payload[0];
 
-export default studentProvider
+    students = students.map((student: any) => ({
+      ...student,
+      status: EnableStatus.ENABLED,
+    }));
+    const studentResponse = (
+      await usersApi().createOrUpdateStudents(
+        students,
+        Params.meta?.dueDatetime
+      )
+    ).data;
+
+    if (students.length <= 1 && fees.length > 0) {
+      await payingApi().createStudentFees(studentResponse[0]?.id!, fees);
+    }
+    return studentResponse;
+  },
+  async delete(_id: string) {
+    throw new Error("Not implemented");
+  },
+};
+
+export default studentProvider;
